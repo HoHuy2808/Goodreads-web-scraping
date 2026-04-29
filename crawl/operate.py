@@ -1,4 +1,5 @@
 import os
+import json
 import time
 import requests
 import get_variables as gvar
@@ -109,5 +110,9 @@ def get_book(num_genres=40, max_page=20):
                     book_list.append(href)
 
             print(f"Page {page}: {len(books)} books")
+
+        os.makedirs("data", exist_ok=True)
+        with open("data/book.json", "w", encoding="utf-8") as f:
+            json.dump(book_list, f, indent=2)
 
     return book_list

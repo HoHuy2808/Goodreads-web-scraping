@@ -15,9 +15,8 @@ def get_data(num_genres=40, max_page=20):
     book_data = []
     bookList = get_book(num_genres=num_genres, max_page=max_page)
 
-    for book in tqdm(bookList):
+    for book in bookList:
 
-        # book_url = bookList[idx]
         book_url = book
         response = requests.get(book_url, headers=headers) 
         soup = BeautifulSoup(response.text, "html.parser")
@@ -50,7 +49,7 @@ def get_data(num_genres=40, max_page=20):
             book_genres = ", ".join(genres)
 
         # Details
-        book_detail = div.find("span",{"class":"Formatted"}).text
+        book_detail = div.find("span",{"class":"Formatted"}).text.replace("\"", "'")
 
         dict = {'Title': book_title,
                     'Author': book_author,
@@ -68,6 +67,4 @@ if __name__ == "__main__":
     os.makedirs("data", exist_ok=True)
 
     with open("data/book_data.json", "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-
-    print("Saved data")
+        json.dump(data, f, indent=2)
