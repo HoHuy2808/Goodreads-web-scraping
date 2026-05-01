@@ -21,6 +21,26 @@ load_dotenv()
 EMAIL = os.getenv("GOODREADS_EMAIL")
 PASSWORD = os.getenv("GOODREADS_PASSWORD")
 
+
+def get_publisher(soup):
+    script = soup.find("script",{"type":"application/json"}).string
+    result = json.loads(script)
+    json_data = result["props"]["pageProps"]["apolloState"]
+    for key, value in json_data.items():
+        if key.startswith("Book:"):
+            try:
+                publisher = value['details']['publisher']
+                return publisher
+            except:
+                return None
+
+def get_data_from_script(soup):
+    """Crawl data from structured metada embedded inside HTML page """
+    script = soup.find("script", {"type": "application/ld+json"}).string
+    result = json.loads(script)
+    
+    return result
+
 # Crawl genres
 def get_genres():
     genres_url = f"{gvar.goodreads}/genres"
@@ -40,24 +60,6 @@ def get_genres():
 
 
 # Crawl book url
-def get_genres():
-    genres_url = f"{gvar.goodreads}/genres"
-    response = requests.get(genres_url, headers=headers) 
-    soup = BeautifulSoup(response.text, "html.parser")
-    container = soup.find_all('div', {'class': 'left'})
-
-    genres = []
-    for div in container:
-        links = div.find_all('a', class_='gr-hyperlink')
-        for link in links:
-
-            name = link.text.lower().replace(" ","-").replace("'","")
-            genres.append(name)
-
-    return genres
-
-
-# Crawl
 def get_book(num_genres=40, max_page=20):
 
     book_list = []
