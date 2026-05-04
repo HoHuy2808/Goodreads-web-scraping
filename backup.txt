@@ -1,0 +1,178 @@
+# # Crawl genres
+# def get_genres():
+#     genres_url = f"{gvar.goodreads}/genres"
+#     response = requests.get(genres_url, headers=headers) 
+#     soup = BeautifulSoup(response.text, "html.parser")
+#     container = soup.find_all('div', {'class': 'left'})
+
+#     genres = []
+#     for div in container:
+#         links = div.find_all('a', class_='gr-hyperlink')
+#         for link in links:
+
+#             name = link.text.lower().replace(" ","-").replace("'","")
+#             genres.append(name)
+
+#     return genres
+
+
+# # Crawl book url
+# def get_book(num_genres=40, max_page=20):
+
+#     book_list = []
+#     genres = get_genres()[:num_genres]
+
+#     chrome_options = Options()
+#     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+
+#     driver = webdriver.Chrome(options=chrome_options)
+#     wait = WebDriverWait(driver, 10)
+
+#     # Login
+#     driver.get(f"{gvar.goodreads}/user/sign_in")
+
+#     time.sleep(10)
+
+#     if "sign_in" in driver.current_url:
+#         driver.find_element(By.LINK_TEXT, "Sign in with email").click()
+
+#         wait.until(EC.presence_of_element_located((By.ID, "ap_email")))
+
+#         driver.find_element(By.ID, "ap_email").send_keys(EMAIL)
+#         time.sleep(10)
+
+#         driver.find_element(By.ID, "ap_password").send_keys(PASSWORD)
+#         time.sleep(2)
+        
+#         driver.find_element(By.ID, "signInSubmit").click()
+#         time.sleep(5)
+        
+#         print("Logged in successfully!")
+#     else:
+#         print("Already logged in")
+
+        
+#     for genre in genres:
+#         print(f"\n Crawling genre: {genre}")
+
+#         for page in range(1, max_page + 1):
+#             url = f"{gvar.goodreads}/shelf/show/{genre}?page={page}"
+#             driver.get(url)
+
+#             wait.until(EC.presence_of_element_located((By.CLASS_NAME, "bookTitle")))
+
+#             books = driver.find_elements(By.CLASS_NAME, "bookTitle")
+
+#             for book in books:
+#                 href = book.get_attribute("href")
+#                 if href:
+#                     book_list.append(href)
+
+#             print(f"Page {page}: {len(books)} books")
+
+#         os.makedirs("data", exist_ok=True)
+#         with open("data/book.json", "w", encoding="utf-8") as f:
+#             json.dump(book_list, f, indent=2)
+
+#     return book_list
+
+# def get_data(num_genres=40, max_page=20):
+
+#     book_data = []
+#     bookList = get_book(num_genres=num_genres, max_page=max_page)
+
+#     for book in bookList:
+
+#         book_url = book
+#         response = requests.get(book_url, headers=headers) 
+#         soup = BeautifulSoup(response.text, "html.parser")
+#         div = soup.find("div",{"class":"BookPage__mainContent"})
+
+#         script_data = get_data_from_script(soup)
+
+#         name = book_url.split("/book/show/")[-1]
+#         print(f"Scraping book {name}")
+
+#         if div is None:
+#             print(f"Skipping {book_url} — book not found")
+#             continue
+
+#         # Name
+#         book_name = div.find("h1",{"class":"Text Text__title1"}).text.replace("'"," ").replace(":","")
+
+#         # Author
+#         book_author = div.find("span",{"class":"ContributorLink__name"}).text
+
+#         # Book's ISBN
+#         isbn = script_data.get("isbn", "null")
+        
+#         # Book's ASIN
+#         asin = get_asin(soup)
+
+#         # Publisher
+#         publisher = get_publisher(soup)
+
+#         # Awards
+#         award = script_data.get("awards", "null")
+        
+#         # Language
+#         language = script_data.get("inLanguage", "null")
+
+#         # Total pages for each book
+#         detail = soup.find("div", {"class":"BookDetails"})
+#         total_pages = detail.find("p", {"data-testid":"pagesFormat"}).text.split(" pages")[0]
+
+#         # Genres
+#         sub_div = soup.find("ul",{"class":"CollapsableList"})
+#         if sub_div is None:
+#             print(f"Genres not found")
+#             book_genres = 'null'
+#         else:
+#             raw_genres = sub_div.find_all("span",{"class":"Button__labelItem"})
+#             genres = [genre.get_text(strip=True) for genre in raw_genres if genre.get_text(strip=True)!="...more"]
+#             book_genres = ", ".join(genres)
+
+
+#         # Ratings
+#         book_rating = div.find("div", {"class":"RatingStatistics__rating"}).text
+
+#         # Total number of ratings
+#         total_rating = soup.find("span", {"data-testid":"ratingsCount"}).text.split()[0]
+
+#         # Total reviews
+#         total_review = soup.find("span",{"data-testid":"reviewsCount"}).text.split()[0]
+
+#         # Book price
+#         kindle_price = kindle(asin)
+#         hardcover_price = hardcover(asin)
+#         paperback_price = paperback(asin)
+#         mmp_price = mass_market_paperback(asin)
+
+#         # Descriptions
+#         book_description = div.find("span",{"class":"Formatted"}).text
+
+#         dict = {
+#             'name': book_name,
+#             'isbn': isbn,
+#             'asin': asin,
+#             'author': book_author,
+#             'publisher': publisher,
+#             'genres': book_genres,
+#             'award': award,
+#             'language':language,
+#             'rating': book_rating,
+#             'total_ratings': total_rating,
+#             'total_reviews': total_review,
+#             'pages': total_pages,
+#             'price':{
+#                 'kindle_edition': kindle_price,
+#                 'hardcover_edition': hardcover_price,
+#                 'paperback_edition': paperback_price,
+#                 'mass_market_paperback_edition': mmp_price
+#             },
+#             'description': book_description,
+#             'url': book_url
+#         }
+#         book_data.append(dict)
+
+#     return book_data

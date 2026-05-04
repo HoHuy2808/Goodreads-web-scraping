@@ -5,9 +5,12 @@ import json
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 from operate import (
-    get_book, 
+    # get_asin,
+    get_price,
     get_data_from_script, 
-    get_publisher
+    get_publisher,
+    get_publish_date,
+    get_publish_date_approximate
 )
 import get_variables as gvar
 
@@ -15,26 +18,23 @@ headers = {
     'User-Agent': gvar.user_agent,
     'Accept-language': 'US-en'}
 
-def get_data(num_genres=40, max_page=20):
+def get_data(start=1, end=100):
 
     book_data = []
-    bookList = get_book(num_genres=num_genres, max_page=max_page)
+    
+    for book_id in tqdm(range(start, end+1)):
 
-    for book in bookList:
-
-        book_url = book
-        response = requests.get(book_url, headers=headers) 
+        book_url = f"{gvar.goodreads}/book/show/{book_id}"
+        response = requests.get(book_url, headers=headers)
         soup = BeautifulSoup(response.text, "html.parser")
+        
+        print(f"Scraping book ID {book_id}")
         div = soup.find("div",{"class":"BookPage__mainContent"})
-
-        script_data = get_data_from_script(soup)
-
-        name = book_url.split("/book/show/")[-1]
-        print(f"Scraping book {name}")
-
+    
         if div is None:
             print(f"Skipping {book_url} — book not found")
             continue
+        script_data = get_data_from_script(soup)
 
         # Name
         book_name = div.find("h1",{"class":"Text Text__title1"}).text.replace("'"," ").replace(":","")
@@ -42,31 +42,41 @@ def get_data(num_genres=40, max_page=20):
         # Author
         book_author = div.find("span",{"class":"ContributorLink__name"}).text
 
+        # Book's ISBN
+        isbn = script_data.get("isbn", "null")
+        
+        # Book's ASIN
+        # asin = get_asin(soup)
+        
+        # Book format
+        book_format = script_data.get("bookFormat", "null")
+
         # Publisher
         publisher = get_publisher(soup)
 
-        # ISBN
-        isbn = script_data.get("isbn", "null")
+        # Publish date
+        if isbn != "null":
+            publish_date = get_publish_date(isbn, soup)
+        else:
+            publish_date = get_publish_date_approximate(soup)
 
-
-        # Book format
-        book_format = script_data.get("bookFormat", "null")
-        
         # Awards
         award = script_data.get("awards", "null")
         
+        # Price
+        price = get_price(soup)
+
         # Language
         language = script_data.get("inLanguage", "null")
 
         # Total pages for each book
-        detail = soup.find("div", {"class":"BookDetails"})
-        total_pages = detail.find("p", {"data-testid":"pagesFormat"}).text.split(" pages")[0]
+        pages = script_data.get("numberOfPages","null")
 
         # Genres
         sub_div = soup.find("ul",{"class":"CollapsableList"})
         if sub_div is None:
             print(f"Genres not found")
-            book_genres = 'null'
+            book_genres = None
         else:
             raw_genres = sub_div.find_all("span",{"class":"Button__labelItem"})
             genres = [genre.get_text(strip=True) for genre in raw_genres if genre.get_text(strip=True)!="...more"]
@@ -86,18 +96,22 @@ def get_data(num_genres=40, max_page=20):
         book_description = div.find("span",{"class":"Formatted"}).text
 
         dict = {
+            'Goodreads ID': book_id,
             'name': book_name,
             'isbn': isbn,
+            # 'asin': asin,
+            'format': book_format,
             'author': book_author,
             'publisher': publisher,
+            'publish date': publish_date,
+            'genres': book_genres,
             'award': award,
+            'price': price,
             'language':language,
             'rating': book_rating,
             'total_ratings': total_rating,
             'total_reviews': total_review,
-            'format': book_format,
-            'pages': total_pages,
-            'genres': book_genres,
+            'pages': pages,
             'description': book_description,
             'url': book_url
         }
@@ -106,7 +120,8 @@ def get_data(num_genres=40, max_page=20):
     return book_data
 
 if __name__ == "__main__":
-    data = get_data(num_genres=2, max_page=2)
+    # data = get_data(num_genres=1, max_page=2)
+    data = get_data(start=1,end=100)
 
     os.makedirs("data", exist_ok=True)
 
