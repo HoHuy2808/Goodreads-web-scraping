@@ -1,4 +1,4 @@
 *.ipynb
 .env
-.txt
+backup.txt
 __pycache__

@@ -1,17 +1,11 @@
 import os
 import json
-import time
+import re
 import requests
 import get_variables as gvar
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
 from datetime import datetime
-
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from dotenv import load_dotenv
 
 headers = {
     'User-Agent': gvar.user_agent,
@@ -22,6 +16,29 @@ load_dotenv()
 EMAIL = os.getenv("GOODREADS_EMAIL")
 PASSWORD = os.getenv("GOODREADS_PASSWORD")
 
+def parse_awards(award_text):
+    if not award_text or award_text == "null":
+        return []
+
+    awards_list = []
+
+    pattern = r'(.+?)\s*\((\d{4})\)'
+
+    for item in award_text.split(", "):
+        match = re.match(pattern, item.strip())
+
+        if match:
+            awards_list.append({
+                "award_name": match.group(1).strip(),
+                "year_won": int(match.group(2))
+            })
+        else:
+            awards_list.append({
+                "award_name": item.strip(),
+                "year_won": None
+            })
+
+    return awards_list
 
 def get_price(soup):
     script = soup.find("script", {"type": "application/json"}).string
@@ -42,21 +59,39 @@ def get_price(soup):
     
     return price
 
+
 def get_publish_date_approximate(soup):
-    script = soup.find("script",{"type":"application/json"}).string
-    result = json.loads(script)
+    script = soup.find("script", {"type": "application/json"})
 
-    json_data = result["props"]["pageProps"]["apolloState"]
-    for key, value in json_data.items():
-        if key.startswith("Book:"):
-            details = value.get("details")
+    if not script:
+        return "null"
 
-            if details and details.get("publicationTime"):
-                timestamp = details["publicationTime"]
-    date = datetime.fromtimestamp(timestamp / 1000)
-    publish_date = f"{date.strftime('%B')} {date.day}, {date.year}"
-    
-    return publish_date
+    try:
+        result = json.loads(script.string)
+
+        json_data = result["props"]["pageProps"]["apolloState"]
+
+        for key, value in json_data.items():
+
+            if key.startswith("Book:"):
+
+                details = value.get("details")
+
+                if details and details.get("publicationTime"):
+
+                    timestamp = details["publicationTime"]
+
+                    date = datetime.fromtimestamp(timestamp / 1000)
+
+                    publish_date = f"{date.strftime('%B')} {date.day}, {date.year}"
+
+                    return publish_date
+
+        return "null"
+
+    except Exception as e:
+        print(f"Error extracting publish date: {e}")
+        return "null"
 
 def get_publish_date(isbn, soup):
 
@@ -70,18 +105,6 @@ def get_publish_date(isbn, soup):
 
     return publish_date
 
-# def get_asin(soup):
-#     script = soup.find("script",{"type":"application/json"}).string
-#     result = json.loads(script)
-#     json_data = result["props"]["pageProps"]["apolloState"]
-#     for key, value in json_data.items():
-#         if key.startswith("Book:"):
-#             details = value.get("details")
-
-#             if details and details.get("asin"):
-#                 asin = details["asin"]
-#     return asin
-
 
 def get_publisher(soup):
     script = soup.find("script",{"type":"application/json"}).string
@@ -91,7 +114,7 @@ def get_publisher(soup):
         if key.startswith("Book:"):
             details = value.get("details")
 
-            if details and details.get("asin"):
+            if details and details.get("publisher"):
                 publisher = details["publisher"]
     return publisher
 

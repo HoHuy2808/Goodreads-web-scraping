@@ -5,7 +5,7 @@ import json
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 from operate import (
-    # get_asin,
+    parse_awards,
     get_price,
     get_data_from_script, 
     get_publisher,
@@ -39,14 +39,15 @@ def get_data(start=1, end=100):
         # Name
         book_name = div.find("h1",{"class":"Text Text__title1"}).text.replace("'"," ").replace(":","")
 
+        # Author ID
+        author = soup.find("a", {"class":"ContributorLink"})
+        authorID = author['href'].split("/author/show/")[1].split(".")[0]
+        
         # Author
-        book_author = div.find("span",{"class":"ContributorLink__name"}).text
+        author_name = div.find("span",{"class":"ContributorLink__name"}).text
 
         # Book's ISBN
         isbn = script_data.get("isbn", "null")
-        
-        # Book's ASIN
-        # asin = get_asin(soup)
         
         # Book format
         book_format = script_data.get("bookFormat", "null")
@@ -61,8 +62,9 @@ def get_data(start=1, end=100):
             publish_date = get_publish_date_approximate(soup)
 
         # Awards
-        award = script_data.get("awards", "null")
-        
+        raw_award = script_data.get("awards", "null")
+        award = parse_awards(raw_award)
+
         # Price
         price = get_price(soup)
 
@@ -99,9 +101,11 @@ def get_data(start=1, end=100):
             'Goodreads ID': book_id,
             'name': book_name,
             'isbn': isbn,
-            # 'asin': asin,
             'format': book_format,
-            'author': book_author,
+            'author': {
+                'author ID': authorID,
+                'name': author_name
+            },
             'publisher': publisher,
             'publish date': publish_date,
             'genres': book_genres,
@@ -121,7 +125,7 @@ def get_data(start=1, end=100):
 
 if __name__ == "__main__":
     # data = get_data(num_genres=1, max_page=2)
-    data = get_data(start=1,end=100)
+    data = get_data(start=101,end=200)
 
     os.makedirs("data", exist_ok=True)
 
