@@ -1,4 +1,6 @@
 *.ipynb
 .env
-backup.txt
+crawl
+config
+logs
 __pycache__

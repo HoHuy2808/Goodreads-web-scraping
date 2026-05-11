@@ -1,0 +1,5 @@
+to_postgres:
+	docker exec -it pipeline-postgres-1 psql -U airflow -d airflow
+
+chown:
+	sudo chown -R $USER:$USER .

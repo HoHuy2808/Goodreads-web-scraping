@@ -3,8 +3,9 @@ import requests
 import json
 
 from bs4 import BeautifulSoup
-from tqdm import tqdm
 from operate import (
+    get_genres,
+    get_author,
     parse_awards,
     get_price,
     get_data_from_script, 
@@ -18,12 +19,12 @@ headers = {
     'User-Agent': gvar.user_agent,
     'Accept-language': 'US-en'}
 
-def get_data(start=1, end=100):
+def get_data(start=1, end=100, **kwargs) -> list:
+    ti = kwargs['ti']
 
     book_data = []
     
-    for book_id in tqdm(range(start, end+1)):
-
+    for book_id in range(start, end+1):
         book_url = f"{gvar.goodreads}/book/show/{book_id}"
         response = requests.get(book_url, headers=headers)
         soup = BeautifulSoup(response.text, "html.parser")
@@ -38,13 +39,9 @@ def get_data(start=1, end=100):
 
         # Name
         book_name = div.find("h1",{"class":"Text Text__title1"}).text.replace("'"," ").replace(":","")
-
-        # Author ID
-        author = soup.find("a", {"class":"ContributorLink"})
-        authorID = author['href'].split("/author/show/")[1].split(".")[0]
         
         # Author
-        author_name = div.find("span",{"class":"ContributorLink__name"}).text
+        author = get_author(soup)
 
         # Book's ISBN
         isbn = script_data.get("isbn", "null")
@@ -72,18 +69,10 @@ def get_data(start=1, end=100):
         language = script_data.get("inLanguage", "null")
 
         # Total pages for each book
-        pages = script_data.get("numberOfPages","null")
+        pages = str(script_data.get("numberOfPages","null"))
 
         # Genres
-        sub_div = soup.find("ul",{"class":"CollapsableList"})
-        if sub_div is None:
-            print(f"Genres not found")
-            book_genres = None
-        else:
-            raw_genres = sub_div.find_all("span",{"class":"Button__labelItem"})
-            genres = [genre.get_text(strip=True) for genre in raw_genres if genre.get_text(strip=True)!="...more"]
-            book_genres = ", ".join(genres)
-
+        book_genres = get_genres(soup)
 
         # Ratings
         book_rating = div.find("div", {"class":"RatingStatistics__rating"}).text
@@ -97,19 +86,16 @@ def get_data(start=1, end=100):
         # Descriptions
         book_description = div.find("span",{"class":"Formatted"}).text
 
-        dict = {
+        book_dict = {
             'Goodreads ID': book_id,
             'name': book_name,
             'isbn': isbn,
             'format': book_format,
-            'author': {
-                'author ID': authorID,
-                'name': author_name
-            },
+            'authors': author,
             'publisher': publisher,
-            'publish date': publish_date,
+            'publish_date': publish_date,
             'genres': book_genres,
-            'award': award,
+            'awards': award,
             'price': price,
             'language':language,
             'rating': book_rating,
@@ -119,17 +105,18 @@ def get_data(start=1, end=100):
             'description': book_description,
             'url': book_url
         }
-        book_data.append(dict)
+        book_data.append(book_dict)
 
+        ti.xcom_push(key='book_data', value=json.dumps(book_data))
+        
     return book_data
 
-if __name__ == "__main__":
-    # data = get_data(num_genres=1, max_page=2)
-    data = get_data(start=101,end=200)
+# if __name__ == "__main__":
+#     data = get_data(start=301,end=302)
 
-    os.makedirs("data", exist_ok=True)
+#     os.makedirs("data", exist_ok=True)
 
-    with open("data/book_data.json", "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+#     with open("data/book_data.json", "w", encoding="utf-8") as f:
+#         json.dump(data, f, indent=2)
     
-    print("Goodreads crawl successfully")
+#     print("Goodreads crawl successfully")
