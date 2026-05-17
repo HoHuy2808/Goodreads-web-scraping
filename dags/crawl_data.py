@@ -112,7 +112,7 @@ def get_data(start=1, end=100, **kwargs) -> list:
     return book_data
 
 # if __name__ == "__main__":
-#     data = get_data(start=301,end=302)
+#     data = get_data(start=238,end=238)
 
 #     os.makedirs("data", exist_ok=True)
 

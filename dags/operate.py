@@ -5,18 +5,12 @@ import requests
 
 from bs4 import BeautifulSoup
 from datetime import datetime
-from dotenv import load_dotenv
 
 import get_variables as gvar
 
 headers = {
     'User-Agent': gvar.user_agent,
     'Accept-language': 'US-en'}
-
-# load env
-load_dotenv()
-EMAIL = os.getenv("GOODREADS_EMAIL")
-PASSWORD = os.getenv("GOODREADS_PASSWORD")
 
 def get_genres(soup):
     sub_div = soup.find("ul",{"class":"CollapsableList"})
