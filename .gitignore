@@ -1,6 +1,5 @@
 *.ipynb
 .env
-crawl
 config
 logs
 __pycache__
