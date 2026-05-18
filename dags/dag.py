@@ -7,8 +7,8 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from datetime import datetime, timedelta
 from crawl_data import get_data
 
-start_book_id = 251
-end_book_id = 300
+start_book_id = 301
+end_book_id = 1000
 
 def insert_book_data_to_postgres(**kwargs):
     ti = kwargs['ti']

@@ -15,7 +15,6 @@ headers = {
 def get_genres(soup):
     sub_div = soup.find("ul",{"class":"CollapsableList"})
     if sub_div is None:
-        print(f"Genres not found")
         book_genres = None
     else:
         raw_genres = sub_div.find_all("span",{"class":"Button__labelItem"})
@@ -88,6 +87,10 @@ def get_price(soup):
                 aff = details.get("primaryAffiliateLink", {})
                 if aff:
                     price = aff.get("ebookPrice")
+                    if price:
+                        return price
+                    else:
+                        price = None
                 else:
                     price = None
     return price
@@ -147,8 +150,14 @@ def get_publisher(soup):
         if key.startswith("Book:"):
             details = value.get("details")
 
-            if details and details.get("publisher"):
-                publisher = details["publisher"]
+            if details:
+                publisher = details.get("publisher")
+                if publisher:
+                    return publisher
+                else:
+                    publisher = None
+            else:
+                return None
     return publisher
 
 
