@@ -15,4 +15,5 @@
 <img width="1232" height="730" alt="pipeline_schema" src="https://github.com/user-attachments/assets/a6e3d6fa-6664-474d-8117-f572cc38d246" />
 
 ## Data Pipeline
-<img width="878" height="238" alt="Pipeline" src="https://github.com/user-attachments/assets/2b223d2f-1801-49b9-8305-60f47ee02add" />
+<img width="878" height="238" alt="Data Pipeline" src="https://github.com/user-attachments/assets/fe851a59-1a1f-42c9-bd4a-8707d70a9486" />
+
