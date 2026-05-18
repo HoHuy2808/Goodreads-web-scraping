@@ -11,3 +11,8 @@
         - For Snowflake JDBC Driver: https://repo1.maven.org/maven2/net/snowflake/snowflake-jdbc/
 
 2. Install Airflow on Docker.
+## Schema
+<img width="1232" height="730" alt="pipeline_schema" src="https://github.com/user-attachments/assets/a6e3d6fa-6664-474d-8117-f572cc38d246" />
+
+## Data Pipeline
+<img width="878" height="238" alt="Pipeline" src="https://github.com/user-attachments/assets/2b223d2f-1801-49b9-8305-60f47ee02add" />
